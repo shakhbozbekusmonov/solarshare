@@ -45,3 +45,12 @@ yarn-error.log*
 next-env.d.ts
 
 /lib/generated/prisma
+
+.agent
+.agents
+.claude
+.continue
+.junie
+.trae
+.windsurf
+
