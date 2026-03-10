@@ -1,0 +1,84 @@
+{
+	// ============================================
+	// 🚀 AI Team Orchestrator — Copilot Settings
+	// ============================================
+	// Bu workspace sozlamalari .github/prompts/ agentlarini
+	// professional team sifatida ishlashini ta'minlaydi.
+
+	// ---- Copilot Core ----
+	"github.copilot.enable": {
+		"*": true,
+		"plaintext": true,
+		"markdown": true,
+		"scminput": false
+	},
+	"github.copilot.nextEditSuggestions.enabled": true,
+
+	// ---- Instruction Files ----
+	// Global instructions har doim yuklanadi.
+	// Agent prompt fayllarini # bilan tanlaysiz (masalan #backend-lead).
+	"github.copilot.chat.codeGeneration.useInstructionFiles": true,
+	"github.copilot.chat.codeGeneration.instructionFiles": [
+		".github/copilot-instructions.md",
+		".github/copilot-test-instructions.md"
+	],
+
+	// ---- Commit Message Format ----
+	"github.copilot.chat.commitMessageGeneration.instructions": [
+		{
+			"text": "Use conventional commits format. Types: feat|fix|refactor|test|docs|chore|ci|perf|build. Include scope: feat(api): add user endpoint | fix(ui): table pagination | test(mobile): auth flow. Max 72 chars subject. Imperative mood. If breaking change, add BREAKING CHANGE footer."
+		}
+	],
+
+	// ---- Code Review Instructions ----
+	"github.copilot.chat.reviewSelection.instructions": [
+		{
+			"text": "Review as a senior staff engineer across the full stack. Check:\n\n**Security**: No hardcoded secrets/API keys, SQL injection prevention (parameterized queries/sqlc), proper auth checks on all endpoints, CORS configuration, input sanitization.\n\n**Go Backend**: All errors handled (no _ = err), context propagation, proper defer for cleanup, no goroutine leaks, zerolog structured logging.\n\n**TypeScript/React**: No 'any' types, proper error boundaries, React Query cache invalidation, no unnecessary re-renders, accessibility (aria labels).\n\n**React Native**: No inline styles in render, FlashList over FlatList, proper SafeAreaView usage, platform-specific handling.\n\n**Python AI**: Async/await consistency, proper exception handling, token/cost tracking, rate limiting on LLM calls.\n\n**Performance**: N+1 queries, missing DB indexes, unnecessary re-fetches, bundle size impact, memory leaks.\n\n**Testing**: Missing edge cases, proper mocking, test isolation, minimum 80% coverage.\n\n**Production Readiness**: Environment variables for config, proper Docker builds, health check endpoints, graceful shutdown."
+		}
+	],
+
+	// ---- Language-Specific Formatting ----
+	"[go]": {
+		"editor.formatOnSave": true,
+		"editor.defaultFormatter": "golang.go"
+	},
+	"[typescript]": {
+		"editor.formatOnSave": true,
+		"editor.defaultFormatter": "esbenp.prettier-vscode"
+	},
+	"[typescriptreact]": {
+		"editor.formatOnSave": true,
+		"editor.defaultFormatter": "esbenp.prettier-vscode"
+	},
+	"[python]": {
+		"editor.formatOnSave": true
+	},
+
+	// ---- File Exclusions (reduce noise for agents) ----
+	"files.exclude": {
+		"**/.git": true,
+		"**/.expo": true,
+		"**/.next": true,
+		"**/node_modules": true,
+		"**/__pycache__": true,
+		"**/.pytest_cache": true,
+		"**/dist": true,
+		"**/.turbo": true,
+		"**/coverage": true
+	},
+
+	// ---- Search Exclusions ----
+	"search.exclude": {
+		"**/node_modules": true,
+		"**/.next": true,
+		"**/.expo": true,
+		"**/dist": true,
+		"**/coverage": true,
+		"**/__pycache__": true,
+		"**/vendor": true,
+		"**/*.min.js": true,
+		"**/package-lock.json": true,
+		"**/go.sum": true,
+		"**/pnpm-lock.yaml": true
+	}
+}
