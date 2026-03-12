@@ -15,9 +15,31 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-	title: 'SolarShare — Quyosh Energiyasi Bozori',
+	title: {
+		default: 'SolarShare — Quyosh Energiyasi Bozori',
+		template: '%s | SolarShare',
+	},
 	description:
 		"Quyosh paneli egalari ortiqcha energiyasini sotishi va xaridorlar arzon energiya olishi mumkin bo'lgan raqamli bozor.",
+	keywords: [
+		'quyosh energiyasi',
+		'solar energy',
+		'P2P energy',
+		'SolarShare',
+		'energiya bozori',
+	],
+	openGraph: {
+		title: 'SolarShare — Quyosh Energiyasi Bozori',
+		description:
+			"Quyosh paneli egalari ortiqcha energiyasini sotishi va xaridorlar arzon energiya olishi mumkin bo'lgan raqamli bozor.",
+		type: 'website',
+		locale: 'uz_UZ',
+		siteName: 'SolarShare',
+	},
+	robots: {
+		index: true,
+		follow: true,
+	},
 }
 
 export default function RootLayout({
