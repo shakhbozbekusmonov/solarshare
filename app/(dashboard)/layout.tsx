@@ -1,7 +1,19 @@
+import { AppSidebar } from '@/components/dashboard/app-sidebar'
+import { DashboardHeader } from '@/components/dashboard/dashboard-header'
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
+
 export default function DashboardLayout({
 	children,
 }: {
 	children: React.ReactNode
 }) {
-	return <div className='min-h-screen bg-background'>{children}</div>
+	return (
+		<SidebarProvider>
+			<AppSidebar />
+			<SidebarInset>
+				<DashboardHeader />
+				<div className='flex-1 p-4 md:p-6'>{children}</div>
+			</SidebarInset>
+		</SidebarProvider>
+	)
 }
