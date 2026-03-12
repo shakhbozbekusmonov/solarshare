@@ -23,7 +23,8 @@ export default function ForgotPasswordPage() {
 	})
 
 	async function onSubmit(_data: ForgotPasswordInput) {
-		// MVP: simulate sending email (always succeed for security)
+		// MVP: simulate sending email (always succeed for security — prevents email enumeration)
+		void _data
 		await new Promise(r => setTimeout(r, 1000))
 		setSent(true)
 	}

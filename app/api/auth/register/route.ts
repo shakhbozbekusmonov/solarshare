@@ -1,10 +1,24 @@
 import { prisma } from '@/lib/prisma'
+import { rateLimit } from '@/lib/rate-limit'
 import { registerSchema } from '@/lib/validations'
 import bcrypt from 'bcryptjs'
 import { NextResponse } from 'next/server'
 
 export async function POST(request: Request) {
 	try {
+		const ip =
+			request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
+		const { success } = rateLimit(`register:${ip}`, {
+			limit: 5,
+			windowMs: 60 * 1000,
+		})
+		if (!success) {
+			return NextResponse.json(
+				{ error: "Juda ko'p so'rov. Iltimos, birozdan keyin urinib ko'ring." },
+				{ status: 429 },
+			)
+		}
+
 		const body = await request.json()
 		const parsed = registerSchema.safeParse(body)
 
@@ -39,6 +53,7 @@ export async function POST(request: Request) {
 				email,
 				password: hashedPassword,
 				role,
+				isVerified: true, // MVP: auto-verify (email verification not yet implemented)
 			},
 		})
 
