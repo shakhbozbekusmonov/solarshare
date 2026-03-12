@@ -24,7 +24,7 @@
 **Deliverables**:
 
 - [x] Next.js 16 + Tailwind v4 (allaqachon mavjud)
-- [ ] shadcn/ui to'liq sozlangan
+- [x] shadcn/ui to'liq sozlangan
 - [ ] PostgreSQL docker-compose yoki local
 - [ ] Prisma schema + initial migration
 - [ ] Seed data (admin user + 5 ta demo listing)
