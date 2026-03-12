@@ -44,6 +44,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 					throw new Error('BLOCKED')
 				}
 
+				if (!user.isVerified) {
+					throw new Error('NOT_VERIFIED')
+				}
+
 				const isValid = await bcrypt.compare(password, user.password)
 				if (!isValid) return null
 

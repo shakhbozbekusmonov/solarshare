@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button'
+import { prisma } from '@/lib/prisma'
 import {
 	ArrowRight,
 	BarChart3,
@@ -181,18 +182,44 @@ function HowItWorks() {
 }
 
 /* ───────── Stats ───────── */
-const stats = [
-	{ value: '500+', label: 'Foydalanuvchilar', icon: Users },
-	{ value: '12,000', label: 'kWh sotilgan', icon: Zap },
-	{ value: '8.5 t', label: 'CO₂ tejaldi', icon: Leaf },
-	{ value: '99.5%', label: 'Uptime', icon: BarChart3 },
-]
+async function Stats() {
+	const [userCount, listingStats] = await Promise.all([
+		prisma.user.count(),
+		prisma.listing.aggregate({
+			_sum: { totalKwh: true },
+			_count: true,
+		}),
+	])
 
-function Stats() {
+	const totalKwh = Number(listingStats._sum.totalKwh ?? 0)
+	const co2Saved = (totalKwh * 0.7) / 1000 // approx 0.7 kg CO₂ per kWh
+
+	const stats = [
+		{ value: `${userCount}`, label: 'Foydalanuvchilar', icon: Users },
+		{
+			value:
+				totalKwh >= 1000 ? `${(totalKwh / 1000).toFixed(1)}k` : `${totalKwh}`,
+			label: 'kWh jami',
+			icon: Zap,
+		},
+		{
+			value:
+				co2Saved >= 1
+					? `${co2Saved.toFixed(1)} t`
+					: `${(co2Saved * 1000).toFixed(0)} kg`,
+			label: 'CO₂ tejaldi',
+			icon: Leaf,
+		},
+		{ value: `${listingStats._count}`, label: 'Listinglar', icon: BarChart3 },
+	]
+
 	return (
 		<section id='stats' className='py-20 sm:py-28'>
 			<div className='mx-auto max-w-7xl px-4 sm:px-6 lg:px-8'>
 				<div className='mx-auto max-w-2xl text-center'>
+					<div className='mb-2 inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700'>
+						Beta — real vaqt ma&apos;lumotlar
+					</div>
 					<h2 className='text-3xl font-bold tracking-tight sm:text-4xl'>
 						Raqamlarda SolarShare
 					</h2>

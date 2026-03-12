@@ -4,6 +4,19 @@ import { NextResponse } from 'next/server'
 
 const { auth } = NextAuth(authConfig)
 
+async function isUserBlocked(userId: string): Promise<boolean> {
+	try {
+		const res = await fetch(
+			`${process.env.NEXTAUTH_URL ?? 'http://localhost:3000'}/api/auth/check-blocked?userId=${encodeURIComponent(userId)}`,
+		)
+		if (!res.ok) return false
+		const data = await res.json()
+		return data.isBlocked === true
+	} catch {
+		return false
+	}
+}
+
 const publicRoutes = ['/', '/login', '/register', '/forgot-password']
 
 const roleRoutes: Record<string, string[]> = {
@@ -27,7 +40,7 @@ function getRoleRedirect(role: string): string {
 	}
 }
 
-export default auth(req => {
+export default auth(async req => {
 	const { pathname } = req.nextUrl
 	const session = req.auth
 
@@ -54,6 +67,15 @@ export default auth(req => {
 	// Require auth for all other routes
 	if (!session?.user) {
 		return NextResponse.redirect(new URL('/login', req.url))
+	}
+
+	// Check if user is blocked
+	const blocked = await isUserBlocked(session.user.id)
+	if (blocked) {
+		const response = NextResponse.redirect(new URL('/login', req.url))
+		response.cookies.delete('authjs.session-token')
+		response.cookies.delete('__Secure-authjs.session-token')
+		return response
 	}
 
 	// Role-based access
