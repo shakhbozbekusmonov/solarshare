@@ -163,6 +163,9 @@ export async function POST(request: Request) {
 				where: {
 					providerResponse: { path: ['payme_id'], equals: params.id },
 				},
+				include: {
+					order: { select: { requestedKwh: true, listingId: true } },
+				},
 			})
 			if (!tx) {
 				return NextResponse.json({
@@ -171,8 +174,8 @@ export async function POST(request: Request) {
 				})
 			}
 
-			await prisma.$transaction([
-				prisma.transaction.update({
+			await prisma.$transaction(async db => {
+				await db.transaction.update({
 					where: { id: tx.id },
 					data: {
 						status: 'FAILED',
@@ -181,13 +184,21 @@ export async function POST(request: Request) {
 							cancel_reason: params.reason,
 						},
 					},
-				}),
-				prisma.order.update({
+				})
+				await db.order.update({
 					where: { id: tx.orderId },
 					data: { status: 'CANCELLED' },
-				}),
-			])
-			// Note: listing.availableKwh is NOT decremented on cancellation
+				})
+				// Restore reserved kWh back to the listing
+				await db.listing.update({
+					where: { id: tx.order.listingId },
+					data: { availableKwh: { increment: tx.order.requestedKwh } },
+				})
+				await db.listing.updateMany({
+					where: { id: tx.order.listingId, status: 'SOLD' },
+					data: { status: 'ACTIVE' },
+				})
+			})
 
 			return NextResponse.json({
 				result: {

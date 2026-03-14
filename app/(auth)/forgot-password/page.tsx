@@ -14,6 +14,7 @@ interface ForgotPasswordInput {
 
 export default function ForgotPasswordPage() {
 	const [sent, setSent] = useState(false)
+	const [error, setError] = useState('')
 	const {
 		register,
 		handleSubmit,
@@ -22,11 +23,28 @@ export default function ForgotPasswordPage() {
 		defaultValues: { email: '' },
 	})
 
-	async function onSubmit(_data: ForgotPasswordInput) {
-		// MVP: simulate sending email (always succeed for security — prevents email enumeration)
-		void _data
-		await new Promise(r => setTimeout(r, 1000))
-		setSent(true)
+	async function onSubmit(data: ForgotPasswordInput) {
+		setError('')
+
+		try {
+			const res = await fetch('/api/auth/forgot-password', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(data),
+			})
+
+			if (!res.ok) {
+				const json = (await res.json().catch(() => null)) as {
+					error?: string
+				} | null
+				setError(json?.error || "So'rov yuborishda xatolik yuz berdi")
+				return
+			}
+
+			setSent(true)
+		} catch {
+			setError("Server bilan bog'lanib bo'lmadi")
+		}
 	}
 
 	return (
@@ -50,6 +68,12 @@ export default function ForgotPasswordPage() {
 					Email manzilingizni kiriting, tiklash havolasini yuboramiz
 				</p>
 			</div>
+
+			{error && (
+				<div className='rounded-lg bg-destructive/10 p-3 text-sm text-destructive'>
+					{error}
+				</div>
+			)}
 
 			{sent ? (
 				<div className='rounded-lg bg-green-50 border border-green-200 p-4 text-sm text-green-700 space-y-2'>

@@ -14,8 +14,9 @@ import {
 	TableRow,
 } from '@/components/ui/table'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { ChevronLeft, ChevronRight, Package } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Package, X } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
+import { toast } from 'sonner'
 
 interface Order {
 	id: string
@@ -93,6 +94,7 @@ export function BuyerOrdersList() {
 	const [isLoading, setIsLoading] = useState(true)
 	const [tab, setTab] = useState<TabFilter>('all')
 	const [page, setPage] = useState(1)
+	const [cancellingId, setCancellingId] = useState<string | null>(null)
 
 	const fetchOrders = useCallback(async () => {
 		setIsLoading(true)
@@ -133,6 +135,24 @@ export function BuyerOrdersList() {
 		setPage(1)
 	}
 
+	async function handleCancel(orderId: string) {
+		setCancellingId(orderId)
+		try {
+			const res = await fetch(`/api/orders/${orderId}`, { method: 'PATCH' })
+			const json = await res.json().catch(() => null)
+			if (!res.ok) {
+				toast.error(json?.error || 'Buyurtmani bekor qilishda xatolik')
+				return
+			}
+			toast.success('Buyurtma bekor qilindi')
+			fetchOrders()
+		} catch {
+			toast.error("Server bilan bog'lanib bo'lmadi")
+		} finally {
+			setCancellingId(null)
+		}
+	}
+
 	return (
 		<div className='space-y-6'>
 			<Tabs value={tab} onValueChange={handleTabChange}>
@@ -170,6 +190,7 @@ export function BuyerOrdersList() {
 									<TableHead>To&apos;lov</TableHead>
 									<TableHead>Holat</TableHead>
 									<TableHead>Sana</TableHead>
+									<TableHead />
 								</TableRow>
 							</TableHeader>
 							<TableBody>
@@ -204,6 +225,20 @@ export function BuyerOrdersList() {
 											</TableCell>
 											<TableCell className='text-muted-foreground'>
 												{new Date(order.createdAt).toLocaleDateString('uz-UZ')}
+											</TableCell>
+											<TableCell>
+												{order.status === 'PENDING' && (
+													<Button
+														variant='ghost'
+														size='sm'
+														className='text-destructive hover:text-destructive'
+														disabled={cancellingId === order.id}
+														onClick={() => handleCancel(order.id)}
+													>
+														<X className='size-4 mr-1' />
+														Bekor
+													</Button>
+												)}
 											</TableCell>
 										</TableRow>
 									)
@@ -257,6 +292,18 @@ export function BuyerOrdersList() {
 												</p>
 											</div>
 										</div>
+										{order.status === 'PENDING' && (
+											<Button
+												variant='outline'
+												size='sm'
+												className='w-full text-destructive border-destructive/40 hover:bg-destructive/10'
+												disabled={cancellingId === order.id}
+												onClick={() => handleCancel(order.id)}
+											>
+												<X className='size-4 mr-1' />
+												Buyurtmani bekor qilish
+											</Button>
+										)}
 									</CardContent>
 								</Card>
 							)

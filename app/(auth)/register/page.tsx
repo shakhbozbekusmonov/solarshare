@@ -22,10 +22,17 @@ function RegisterForm() {
 	const defaultRole = searchParams.get('role')?.toUpperCase()
 
 	const [error, setError] = useState('')
+	const initialRole: RegisterInput['role'] =
+		defaultRole === 'SELLER' ||
+		defaultRole === 'BUYER' ||
+		defaultRole === 'BOTH'
+			? defaultRole
+			: 'BUYER'
+	const [selectedRole, setSelectedRole] =
+		useState<RegisterInput['role']>(initialRole)
 	const {
 		register,
 		handleSubmit,
-		watch,
 		setValue,
 		formState: { errors, isSubmitting },
 	} = useForm<RegisterInput>({
@@ -33,16 +40,9 @@ function RegisterForm() {
 			name: '',
 			email: '',
 			password: '',
-			role:
-				defaultRole === 'SELLER' ||
-				defaultRole === 'BUYER' ||
-				defaultRole === 'BOTH'
-					? defaultRole
-					: 'BUYER',
+			role: initialRole,
 		},
 	})
-
-	const selectedRole = watch('role')
 
 	async function onSubmit(data: RegisterInput) {
 		setError('')
@@ -90,6 +90,8 @@ function RegisterForm() {
 			)}
 
 			<form onSubmit={handleSubmit(onSubmit)} className='space-y-4'>
+				<input type='hidden' {...register('role')} />
+
 				<div className='space-y-2'>
 					<Label htmlFor='name'>Ism</Label>
 					<Input
@@ -150,7 +152,10 @@ function RegisterForm() {
 							<button
 								key={r.value}
 								type='button'
-								onClick={() => setValue('role', r.value)}
+								onClick={() => {
+									setSelectedRole(r.value)
+									setValue('role', r.value, { shouldValidate: true })
+								}}
 								className={`rounded-lg border p-3 text-center text-sm transition-colors ${
 									selectedRole === r.value
 										? 'border-amber-500 bg-amber-50 text-amber-700'

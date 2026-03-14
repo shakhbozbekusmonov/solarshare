@@ -81,14 +81,20 @@ export async function POST(request: Request) {
 
 			const order = await prisma.order.findUnique({
 				where: { id: orderId },
+				select: {
+					totalPrice: true,
+					status: true,
+					requestedKwh: true,
+					listingId: true,
+				},
 			})
 
 			if (!order || order.status !== 'PENDING') {
 				return NextResponse.json({ received: true })
 			}
 
-			await prisma.$transaction([
-				prisma.transaction.create({
+			await prisma.$transaction(async db => {
+				await db.transaction.create({
 					data: {
 						orderId,
 						amount: order.totalPrice,
@@ -99,12 +105,21 @@ export async function POST(request: Request) {
 							payment_intent_id: event.data.object.id,
 						},
 					},
-				}),
-				prisma.order.update({
+				})
+				await db.order.update({
 					where: { id: orderId },
 					data: { status: 'CANCELLED' },
-				}),
-			])
+				})
+				// Restore reserved kWh back to the listing
+				await db.listing.update({
+					where: { id: order.listingId },
+					data: { availableKwh: { increment: order.requestedKwh } },
+				})
+				await db.listing.updateMany({
+					where: { id: order.listingId, status: 'SOLD' },
+					data: { status: 'ACTIVE' },
+				})
+			})
 
 			return NextResponse.json({ received: true })
 		}
