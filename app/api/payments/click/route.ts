@@ -101,8 +101,8 @@ export async function POST(request: Request) {
 		const hasError = parseInt(body.error, 10) < 0
 
 		if (hasError) {
-			await prisma.$transaction([
-				prisma.transaction.update({
+			await prisma.$transaction(async db => {
+				await db.transaction.update({
 					where: { id: tx.id },
 					data: {
 						status: 'FAILED',
@@ -112,12 +112,21 @@ export async function POST(request: Request) {
 							error_note: body.error_note,
 						},
 					},
-				}),
-				prisma.order.update({
+				})
+				await db.order.update({
 					where: { id: tx.orderId },
 					data: { status: 'CANCELLED' },
-				}),
-			])
+				})
+				// Restore reserved kWh back to the listing
+				await db.listing.update({
+					where: { id: tx.order.listingId },
+					data: { availableKwh: { increment: tx.order.requestedKwh } },
+				})
+				await db.listing.updateMany({
+					where: { id: tx.order.listingId, status: 'SOLD' },
+					data: { status: 'ACTIVE' },
+				})
+			})
 
 			return NextResponse.json({
 				click_trans_id: body.click_trans_id,
