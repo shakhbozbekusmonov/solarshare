@@ -1,3 +1,83 @@
+## Final Retest — 2026-03-14 (All Sprints Complete)
+
+**QA Engineer**: AI QA Engineer Lead  
+**Environment**: macOS, Node.js, Next.js 16.1.6, local dev server on :3000, PostgreSQL-backed runtime
+
+### Scope
+
+- `pnpm build`
+- `pnpm lint`
+- Public route smoke tests
+- Auth flow smoke tests (register, credentials login, session, protected redirects)
+- Buyer runtime tests (`/buyer/marketplace`, `GET/POST/PATCH /api/orders`)
+- Seller runtime tests (`/seller/*`, `GET /api/listings?sellerId=me`)
+- Admin runtime tests (`/admin/*`, `/api/admin/*`)
+- Payment webhook guard tests (`/api/payments/payme`, `/api/payments/click`, `/api/payments/stripe`)
+- Business logic: oversell prevention, order cancellation with kWh restoration
+
+### Current Result
+
+| Area           | Result  | Notes                                                                      |
+| -------------- | ------- | -------------------------------------------------------------------------- |
+| Build          | ✅ PASS | `pnpm build` clean, 0 errors                                               |
+| Lint           | ✅ PASS | 0 warnings, 0 errors                                                       |
+| Public routes  | ✅ PASS | `/` returns 200, unauth protected redirect works                           |
+| Auth           | ✅ PASS | Register, duplicate-email guard, buyer/seller/admin login all work         |
+| Buyer flows    | ✅ PASS | Marketplace loads, order create 201, cancel order 200, orders list updates |
+| Seller flows   | ✅ PASS | Seller session valid, buyer pages redirect away, own listings load         |
+| Admin flows    | ✅ PASS | Users, listings, transactions, analytics APIs all return 200               |
+| Payment guards | ✅ PASS | Invalid Payme/Click/Stripe requests properly rejected                      |
+| Business logic | ✅ PASS | Oversell blocked (400), kWh restored on cancellation, listing reactivated  |
+
+### Smoke Test Evidence (15/15 PASS)
+
+```
+PASS | Public listings     | count=3
+PASS | Buyer session       | role=BUYER
+PASS | Create order        | status=201
+PASS | Cancel order        | status=200 msg=Buyurtma bekor qilindi
+PASS | Order CANCELLED     | status=CANCELLED
+PASS | Oversell 1st OK     | status=201
+PASS | Oversell 2nd blocked| status=400 err=Bu listing faol emas
+PASS | Admin session       | role=ADMIN
+PASS | Admin users         | status=200
+PASS | Admin listings      | status=200
+PASS | Admin transactions  | status=200
+PASS | Admin analytics     | status=200
+PASS | Payme invalid auth  | msg=Unauthorized
+PASS | Click invalid sign  | error=-1
+PASS | Stripe invalid sig  | status=400
+
+SUMMARY failures=0
+```
+
+### Resolved Bugs
+
+#### BUG-006 FIXED: Oversell via Multiple Pending Orders (was CRITICAL)
+
+- **Fix**: `POST /api/orders` atomically reserves `availableKwh` via `updateMany` with `gte` guard.
+- **Additional fix**: `cancelOrder()`, Payme `CancelTransaction`, Click `hasError`, and Stripe `payment_intent.payment_failed` now all restore reserved kWh and reactivate SOLD listings atomically.
+- **New**: `PATCH /api/orders/[id]` endpoint allows buyer/admin to cancel a PENDING order with kWh restoration.
+
+#### BUG-007 FIXED: Register Page React Compiler Warning (was LOW)
+
+- **Fix**: `watch('role')` removed from register page; role state managed via `useState` + `setValue`.
+- **Result**: `pnpm lint` now returns 0 warnings.
+
+#### BUG-001 STATUS: Acceptable for MVP — Forgot Password
+
+- **Status**: API route exists (`POST /api/auth/forgot-password`), returns generic success, rate-limited.
+- **Behavior**: Email infrastructure not connected (email service not configured for MVP).
+- UI correctly calls the API and shows confirmation; no fake success without API call.
+- **Not a release blocker** for MVP — documented limitation.
+
+### Final Verdict
+
+**Overall status**: ✅ PASS  
+All MVP sprints complete. Core flows operational: auth, seller CRUD, buyer marketplace + checkout + order cancel, admin panel, payment webhooks, oversell prevention. Build and lint clean.
+
+---
+
 ## Retest Update — 2026-03-14
 
 **QA Engineer**: AI QA Engineer Lead  

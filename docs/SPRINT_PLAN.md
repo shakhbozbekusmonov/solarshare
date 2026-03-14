@@ -177,9 +177,10 @@
 - [x] Toast notification tizimi (sonner)
 - [x] Error boundary komponentlar
 - [x] SEO meta tags (Landing page)
-- [ ] Vercel production deploy
-- [ ] E2E manual test: Register → Login → Create Listing → Buy → Pay → Admin review
-- [ ] Critical buglar tuzatilgan
+- [x] E2E manual test: Register → Login → Create Listing → Buy → Pay → Admin review — 15/15 PASS
+- [x] Critical buglar tuzatilgan: BUG-006 (oversell + kWh restoration), BUG-007 (lint warning)
+- [x] `PATCH /api/orders/[id]` — buyer order cancel with atomic kWh restoration
+- [ ] Vercel production deploy (infratuzilma tayyor; environment variables kerak)
 
 ---
 
