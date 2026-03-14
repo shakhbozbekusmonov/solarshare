@@ -1,5 +1,6 @@
 'use client'
 
+import { LoadErrorState } from '@/components/dashboard/load-error-state'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -79,6 +80,7 @@ const roleLabels: Record<string, string> = {
 
 export function AdminUsersList() {
 	const [data, setData] = useState<UsersResponse | null>(null)
+	const [errorMessage, setErrorMessage] = useState<string | null>(null)
 	const [isLoading, setIsLoading] = useState(true)
 	const [search, setSearch] = useState('')
 	const [searchInput, setSearchInput] = useState('')
@@ -87,13 +89,24 @@ export function AdminUsersList() {
 
 	const fetchUsers = useCallback(async () => {
 		setIsLoading(true)
+		setErrorMessage(null)
 		const params = new URLSearchParams({ page: String(page), limit: '20' })
 		if (search) params.set('search', search)
 		if (roleFilter !== 'all') params.set('role', roleFilter)
 
 		try {
 			const res = await fetch(`/api/admin/users?${params}`)
-			if (res.ok) setData(await res.json())
+			if (!res.ok) {
+				const json = await res.json().catch(() => null)
+				throw new Error(json?.error || 'Foydalanuvchilarni yuklashda xatolik')
+			}
+
+			setData(await res.json())
+		} catch (error) {
+			setData(null)
+			setErrorMessage(
+				error instanceof Error ? error.message : 'Kutilmagan xatolik yuz berdi',
+			)
 		} finally {
 			setIsLoading(false)
 		}
@@ -179,6 +192,12 @@ export function AdminUsersList() {
 						<Skeleton key={i} className='h-14 w-full' />
 					))}
 				</div>
+			) : errorMessage ? (
+				<LoadErrorState
+					title="Foydalanuvchilarni yuklab bo'lmadi"
+					description={errorMessage}
+					onRetry={fetchUsers}
+				/>
 			) : data && data.users.length > 0 ? (
 				<div className='rounded-md border'>
 					<Table>

@@ -1,3 +1,77 @@
+## Retest Update — 2026-03-14
+
+**QA Engineer**: AI QA Engineer Lead  
+**Environment**: macOS, Node.js, Next.js 16.1.6, local dev server on :3000, PostgreSQL-backed runtime
+
+### Scope
+
+- `pnpm build`
+- `pnpm lint`
+- Public route smoke tests
+- Auth flow smoke tests (register, credentials login, session, protected redirects)
+- Buyer runtime tests (`/buyer/marketplace`, `GET/POST /api/orders`)
+- Seller runtime tests (`/seller/*`, `GET /api/listings?sellerId=me`)
+- Admin runtime tests (`/admin/*`, `/api/admin/*`)
+- Payment webhook guard tests (`/api/payments/payme`, `/api/payments/click`, `/api/payments/stripe`)
+
+### Current Result
+
+| Area           | Result  | Notes                                                                   |
+| -------------- | ------- | ----------------------------------------------------------------------- |
+| Build          | ✅ PASS | `pnpm build` clean                                                      |
+| Lint           | ⚠️ WARN | 1 warning in register page (`react-hooks/incompatible-library`)         |
+| Public routes  | ✅ PASS | `/` returns 200, unauth protected redirect works                        |
+| Auth           | ✅ PASS | Register, duplicate-email guard, buyer/seller/admin login all work      |
+| Buyer flows    | ✅ PASS | Marketplace loads, order create returns 201, orders list updates        |
+| Seller flows   | ✅ PASS | Seller session valid, buyer pages redirect away, own listings load      |
+| Admin flows    | ✅ PASS | Users, listings, transactions, analytics APIs all return 200            |
+| Payment guards | ✅ PASS | Invalid Payme/Click/Stripe requests no longer return stub/501 responses |
+| Business logic | ❌ FAIL | Oversell bug confirmed for pending orders                               |
+
+### Confirmed Findings
+
+#### BUG-006: Oversell via Multiple Pending Orders (Severity: CRITICAL)
+
+- **Files**: `app/api/orders/route.ts`, `lib/payments/index.ts`
+- **Scenario**: One active 50 kWh listing accepted two separate 50 kWh `PENDING` orders.
+- **Observed**: First order `201`, second order `201`, while listing stock was not reserved between them.
+- **Risk**: Multiple buyers can reserve more energy than actually exists. On later payment completion, the system can oversell inventory.
+- **Root cause**: `POST /api/orders` no longer decrements or reserves `availableKwh`, while `completeOrder()` decrements only after payment success and does not reject if stock has already been consumed by another paid order.
+- **Recommendation**: Introduce reservation semantics for pending orders or revalidate stock atomically during payment completion before marking order paid.
+
+#### BUG-001: Forgot Password Still Simulated (Severity: MEDIUM)
+
+- **File**: `app/(auth)/forgot-password/page.tsx`
+- **Observed**: Form always shows success after timeout; no API route exists for reset flow.
+- **Risk**: UI implies recovery works when no reset email can actually be sent.
+
+#### BUG-007: Register Page React Compiler Warning (Severity: LOW)
+
+- **File**: `app/(auth)/register/page.tsx`
+- **Observed**: `watch('role')` from React Hook Form triggers `react-hooks/incompatible-library` warning during `pnpm lint`.
+- **Risk**: Not a release blocker, but leaves lint non-clean and may complicate future React Compiler adoption.
+
+### Runtime Smoke Evidence
+
+- Public landing page returned `200`
+- Unauthenticated `/seller/overview` redirected to `/login`
+- Public listings API returned active listing payload
+- Register new user returned `201`; duplicate register returned `409`
+- Buyer login returned `302`; `/api/auth/session` returned role `BUYER`
+- Buyer order creation returned `201` and order list count increased
+- Seller access to buyer pages redirected to `/seller/overview`
+- Admin APIs `/api/admin/users`, `/api/admin/listings`, `/api/admin/transactions`, `/api/admin/analytics` all returned `200`
+- Invalid Payme auth returned expected unauthorized payload
+- Invalid Click signature returned `error: -1`
+- Invalid Stripe signature returned `400`
+
+### Updated Verdict
+
+**Overall status**: ⚠️ CONDITIONAL PASS  
+Core routes and APIs are operational, but the oversell bug is a release-blocking issue for any real payment/order flow.
+
+---
+
 # 🧪 QA Test Report — SolarShare MVP
 
 **Sana**: 2026-03-12

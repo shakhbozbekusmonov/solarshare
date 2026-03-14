@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { Button } from '@/components/ui/button'
 import { prisma } from '@/lib/prisma'
 import {
@@ -183,15 +185,25 @@ function HowItWorks() {
 
 /* ───────── Stats ───────── */
 async function Stats() {
-	const [userCount, listingStats] = await Promise.all([
-		prisma.user.count(),
-		prisma.listing.aggregate({
-			_sum: { totalKwh: true },
-			_count: true,
-		}),
-	])
+	let userCount = 0
+	let totalKwh = 0
+	let listingCount = 0
 
-	const totalKwh = Number(listingStats._sum.totalKwh ?? 0)
+	try {
+		const [count, listingStats] = await Promise.all([
+			prisma.user.count(),
+			prisma.listing.aggregate({
+				_sum: { totalKwh: true },
+				_count: true,
+			}),
+		])
+		userCount = count
+		totalKwh = Number(listingStats._sum.totalKwh ?? 0)
+		listingCount = listingStats._count
+	} catch {
+		// DB unavailable (e.g. dev without Docker) — show zeros gracefully
+	}
+
 	const co2Saved = (totalKwh * 0.7) / 1000 // approx 0.7 kg CO₂ per kWh
 
 	const stats = [
@@ -210,7 +222,7 @@ async function Stats() {
 			label: 'CO₂ tejaldi',
 			icon: Leaf,
 		},
-		{ value: `${listingStats._count}`, label: 'Listinglar', icon: BarChart3 },
+		{ value: `${listingCount}`, label: 'Listinglar', icon: BarChart3 },
 	]
 
 	return (
@@ -337,11 +349,7 @@ function CtaBanner() {
 							</Button>
 						</Link>
 						<Link href='/register?role=buyer'>
-							<Button
-								size='lg'
-								variant='outline'
-								className='border-white/30 text-white hover:bg-white/10 gap-2 h-12 px-8'
-							>
+							<Button size='lg' variant='outline' className='bg-amber-500 gap-2 h-12 px-8'>
 								Xaridor bo&apos;lish
 								<ArrowRight className='size-4' />
 							</Button>

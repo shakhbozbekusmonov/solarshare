@@ -25,11 +25,11 @@
 
 - [x] Next.js 16 + Tailwind v4 (allaqachon mavjud)
 - [x] shadcn/ui to'liq sozlangan
-- [ ] PostgreSQL docker-compose yoki local
-- [ ] Prisma schema + initial migration
-- [ ] Seed data (admin user + 5 ta demo listing)
-- [ ] Papka tuzilmasi tayyor
-- [ ] `.env.example` fayli
+- [x] PostgreSQL docker-compose yoki local
+- [x] Prisma schema + initial migration
+- [x] Seed data (admin user + 5 ta demo listing)
+- [x] Papka tuzilmasi tayyor
+- [x] `.env.example` fayli
 
 ---
 
@@ -59,12 +59,12 @@
 
 **Deliverables**:
 
-- [ ] `/register` — ism, email, parol, rol tanlash
-- [ ] `/login` — email, parol, role-based redirect
-- [ ] `/forgot-password` — email orqali tiklash (basic)
-- [ ] `middleware.ts` — protected routes
-- [ ] Landing page — to'liq (hero, how it works, stats, faq, footer)
-- [ ] Mobile-first responsive dizayn
+- [x] `/register` — ism, email, parol, rol tanlash
+- [x] `/login` — email, parol, role-based redirect
+- [x] `/forgot-password` — email orqali tiklash (basic)
+- [x] `proxy.ts` — protected routes (Next.js 16, middleware.ts o'rniga)
+- [x] Landing page — to'liq (hero, how it works, stats, faq, footer)
+- [x] Mobile-first responsive dizayn
 
 ---
 
@@ -85,13 +85,13 @@
 
 **Deliverables**:
 
-- [ ] Dashboard layout — sidebar navigation (rol-based)
-- [ ] `/seller/overview` — 4 ta stat widget + oxirgi tranzaksiyalar
-- [ ] `/seller/listings` — tabs, yaratish form, tahrirlash, o'chirish
-- [ ] `/seller/earnings` — grafik (Recharts) + tranzaksiyalar jadval
-- [ ] API endpointlar: `POST/GET/PUT/DELETE /api/listings`, `GET /api/seller/stats`, `GET /api/seller/earnings`
-- [ ] Zod validation barcha formlarda
-- [ ] Loading skeleton states
+- [x] Dashboard layout — sidebar navigation (rol-based)
+- [x] `/seller/overview` — 4 ta stat widget + oxirgi tranzaksiyalar
+- [x] `/seller/listings` — tabs, yaratish form, tahrirlash, o'chirish
+- [x] `/seller/earnings` — grafik (Recharts) + tranzaksiyalar jadval
+- [x] API endpointlar: `POST/GET/PUT/DELETE /api/listings`, `GET /api/seller/stats`, `GET /api/seller/earnings`
+- [x] Zod validation barcha formlarda
+- [x] Loading skeleton states
 
 ---
 
@@ -111,12 +111,12 @@
 
 **Deliverables**:
 
-- [ ] `/buyer/marketplace` — grid layout, search, filter (narx, miqdor), pagination (20/sahifa)
-- [ ] Checkout modal/sahifa — miqdor slider, narx kalkulyatsiya, to'lov usuli tanlash
-- [ ] `/buyer/orders` — tabs (Active, Completed, Cancelled)
-- [ ] API endpointlar: `GET /api/listings` (public, paginated), `POST /api/orders`, `GET /api/orders`
-- [ ] `lib/payments/` — umumiy to'lov utility funksiyalar
-- [ ] Empty states, loading skeletons
+- [x] `/buyer/marketplace` — grid layout, search, filter (narx, miqdor), pagination (20/sahifa)
+- [x] Checkout modal/sahifa — miqdor slider, narx kalkulyatsiya, to'lov usuli tanlash
+- [x] `/buyer/orders` — tabs (Active, Completed, Cancelled)
+- [x] API endpointlar: `GET /api/listings` (public, paginated), `POST /api/orders`, `GET /api/orders`
+- [x] `lib/payments/` — umumiy to'lov utility funksiyalar (verifyPaymeAuth, verifyClickSign, verifyStripeSignature, completeOrder, cancelOrder)
+- [x] Empty states, loading skeletons
 
 ---
 
@@ -144,13 +144,13 @@
 
 **Deliverables**:
 
-- [ ] `POST /api/payments/payme` + webhook callback + HMAC
-- [ ] `POST /api/payments/click` + webhook callback + signature
-- [ ] Order → PAID → Listing.availableKwh kamaytirish → Transaction log
-- [ ] `/admin/users` — jadval, qidiruv, bloklash, rol o'zgartirish
-- [ ] `/admin/listings` — moderatsiya (tasdiqlash/rad etish)
-- [ ] `/admin/transactions` — jadval, sana filter, CSV eksport
-- [ ] Admin middleware himoyasi
+- [x] `POST /api/payments/payme` + webhook callback + HMAC
+- [x] `POST /api/payments/click` + webhook callback + signature
+- [x] Order → PAID → Listing.availableKwh kamaytirish → Transaction log
+- [x] `/admin/users` — jadval, qidiruv, bloklash, rol o'zgartirish
+- [x] `/admin/listings` — moderatsiya (tasdiqlash/rad etish)
+- [x] `/admin/transactions` — jadval, sana filter, CSV eksport
+- [x] Admin middleware himoyasi
 
 ---
 
@@ -173,9 +173,10 @@
 
 **Deliverables**:
 
-- [ ] `/admin/analytics` — KPI widgetlar, foydalanuvchi o'sish grafik, savdo grafik
-- [ ] Toast notification tizimi (sonner yoki shadcn toast)
-- [ ] Error boundary komponentlar
+- [x] `/admin/analytics` — KPI widgetlar, foydalanuvchi o'sish grafik, savdo grafik
+- [x] Toast notification tizimi (sonner)
+- [x] Error boundary komponentlar
+- [x] SEO meta tags (Landing page)
 - [ ] Vercel production deploy
 - [ ] E2E manual test: Register → Login → Create Listing → Buy → Pay → Admin review
 - [ ] Critical buglar tuzatilgan

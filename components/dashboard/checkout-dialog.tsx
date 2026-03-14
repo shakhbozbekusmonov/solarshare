@@ -19,7 +19,7 @@ import {
 	SelectValue,
 } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
-import { CreditCard, Zap } from 'lucide-react'
+import { CreditCard, Wallet, Zap } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 
@@ -47,6 +47,18 @@ function formatCurrency(amount: number, currency: string) {
 	return `${new Intl.NumberFormat('uz-UZ').format(Math.round(amount))} so'm`
 }
 
+function formatKwh(amount: number) {
+	return new Intl.NumberFormat('uz-UZ', {
+		minimumFractionDigits: amount % 1 === 0 ? 0 : 2,
+		maximumFractionDigits: 2,
+	}).format(amount)
+}
+
+function clampRequestedKwh(value: number, maxKwh: number) {
+	if (!Number.isFinite(value)) return 0.01
+	return Math.min(Math.max(value, 0.01), maxKwh)
+}
+
 const periodLabels: Record<string, string> = {
 	DAILY: 'kunlik',
 	WEEKLY: 'haftalik',
@@ -71,10 +83,11 @@ export function CheckoutDialog({
 	const maxKwh = listing ? Number(listing.availableKwh) : 0
 	const pricePerKwh = listing ? Number(listing.pricePerKwh) : 0
 	const totalPrice = requestedKwh * pricePerKwh
+	const quickSelects = [25, 50, 75, 100]
 
 	useEffect(() => {
 		if (listing) {
-			setRequestedKwh(Math.min(10, maxKwh))
+			setRequestedKwh(clampRequestedKwh(Math.min(10, maxKwh), maxKwh))
 			setPaymentMethod('PAYME')
 		}
 	}, [listing, maxKwh])
@@ -143,7 +156,7 @@ export function CheckoutDialog({
 							<span className='text-muted-foreground'>Mavjud</span>
 							<Badge variant='outline' className='gap-1'>
 								<Zap className='size-3' />
-								{maxKwh.toLocaleString()} kWh
+								{formatKwh(maxKwh)} kWh
 							</Badge>
 						</div>
 						<div className='flex items-center justify-between text-sm'>
@@ -163,7 +176,11 @@ export function CheckoutDialog({
 								min={0.01}
 								max={maxKwh}
 								value={requestedKwh}
-								onChange={e => setRequestedKwh(Number(e.target.value))}
+								onChange={e =>
+									setRequestedKwh(
+										clampRequestedKwh(Number(e.target.value), maxKwh),
+									)
+								}
 								required
 							/>
 							<Button
@@ -176,8 +193,38 @@ export function CheckoutDialog({
 								Hammasi
 							</Button>
 						</div>
+						<input
+							type='range'
+							min={0.01}
+							max={maxKwh}
+							step='0.01'
+							value={Math.min(requestedKwh, maxKwh)}
+							onChange={e =>
+								setRequestedKwh(
+									clampRequestedKwh(Number(e.target.value), maxKwh),
+								)
+							}
+							className='h-2 w-full cursor-pointer appearance-none rounded-full bg-muted accent-primary'
+						/>
+						<div className='flex flex-wrap gap-2'>
+							{quickSelects.map(percent => (
+								<Button
+									key={percent}
+									type='button'
+									variant='outline'
+									size='sm'
+									onClick={() =>
+										setRequestedKwh(
+											clampRequestedKwh((maxKwh * percent) / 100, maxKwh),
+										)
+									}
+								>
+									{percent}%
+								</Button>
+							))}
+						</div>
 						<p className='text-xs text-muted-foreground'>
-							Mavjud: {maxKwh.toLocaleString()} kWh gacha
+							Mavjud: {formatKwh(maxKwh)} kWh gacha
 						</p>
 					</div>
 
@@ -209,6 +256,17 @@ export function CheckoutDialog({
 								</SelectItem>
 							</SelectContent>
 						</Select>
+						<div className='rounded-lg border bg-muted/40 p-3 text-xs text-muted-foreground'>
+							<div className='flex items-center gap-2 font-medium text-foreground'>
+								<Wallet className='size-4 text-emerald-600' />
+								To&apos;lov jarayoni
+							</div>
+							<p className='mt-1'>
+								Buyurtma yaratiladi va keyingi bosqichda tanlangan provider
+								orqali to&apos;lov tasdiqlanadi. Listing hajmi faqat
+								muvaffaqiyatli to&apos;lovdan keyin kamayadi.
+							</p>
+						</div>
 					</div>
 
 					<Separator />
@@ -217,7 +275,7 @@ export function CheckoutDialog({
 					<div className='space-y-2'>
 						<div className='flex items-center justify-between text-sm'>
 							<span className='text-muted-foreground'>
-								{requestedKwh} kWh ×{' '}
+								{formatKwh(requestedKwh)} kWh ×{' '}
 								{formatCurrency(pricePerKwh, listing.currency)}
 							</span>
 							<span>{formatCurrency(totalPrice, listing.currency)}</span>

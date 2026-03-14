@@ -1,14 +1,6 @@
+import { completeOrder, verifyPaymeAuth } from '@/lib/payments'
 import { prisma } from '@/lib/prisma'
 import { NextResponse } from 'next/server'
-
-const PAYME_KEY = process.env.PAYME_KEY || ''
-
-function verifyPaymeAuth(authHeader: string | null): boolean {
-	if (!authHeader?.startsWith('Basic ')) return false
-	const decoded = Buffer.from(authHeader.slice(6), 'base64').toString()
-	const [, password] = decoded.split(':')
-	return password === PAYME_KEY
-}
 
 type PaymeMethod =
 	| 'CheckPerformTransaction'
@@ -153,16 +145,8 @@ export async function POST(request: Request) {
 				})
 			}
 
-			await prisma.$transaction([
-				prisma.transaction.update({
-					where: { id: tx.id },
-					data: { status: 'SUCCESS' },
-				}),
-				prisma.order.update({
-					where: { id: tx.orderId },
-					data: { status: 'PAID' },
-				}),
-			])
+			// Marks transaction SUCCESS, order PAID, decrements listing.availableKwh
+			await completeOrder(tx.id)
 
 			return NextResponse.json({
 				result: {
@@ -203,6 +187,7 @@ export async function POST(request: Request) {
 					data: { status: 'CANCELLED' },
 				}),
 			])
+			// Note: listing.availableKwh is NOT decremented on cancellation
 
 			return NextResponse.json({
 				result: {

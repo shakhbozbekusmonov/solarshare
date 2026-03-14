@@ -1,5 +1,6 @@
 'use client'
 
+import { LoadErrorState } from '@/components/dashboard/load-error-state'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -113,13 +114,33 @@ function formatCurrency(amount: number) {
 
 export function AdminAnalytics() {
 	const [data, setData] = useState<AnalyticsData | null>(null)
+	const [errorMessage, setErrorMessage] = useState<string | null>(null)
 	const [isLoading, setIsLoading] = useState(true)
 
 	useEffect(() => {
-		fetch('/api/admin/analytics')
-			.then(res => res.json())
-			.then(setData)
-			.finally(() => setIsLoading(false))
+		async function fetchAnalytics() {
+			setIsLoading(true)
+			setErrorMessage(null)
+			try {
+				const res = await fetch('/api/admin/analytics')
+				if (!res.ok) {
+					const json = await res.json().catch(() => null)
+					throw new Error(json?.error || 'Analitikani yuklashda xatolik')
+				}
+				setData(await res.json())
+			} catch (error) {
+				setData(null)
+				setErrorMessage(
+					error instanceof Error
+						? error.message
+						: 'Kutilmagan xatolik yuz berdi',
+				)
+			} finally {
+				setIsLoading(false)
+			}
+		}
+
+		fetchAnalytics()
 	}, [])
 
 	if (isLoading) {
@@ -142,6 +163,16 @@ export function AdminAnalytics() {
 					<Skeleton className='h-72' />
 				</div>
 			</div>
+		)
+	}
+
+	if (errorMessage) {
+		return (
+			<LoadErrorState
+				title="Analitika ma'lumotlarini yuklab bo'lmadi"
+				description={errorMessage}
+				onRetry={() => window.location.reload()}
+			/>
 		)
 	}
 
