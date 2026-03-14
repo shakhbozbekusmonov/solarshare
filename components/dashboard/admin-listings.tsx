@@ -1,5 +1,6 @@
 'use client'
 
+import { LoadErrorState } from '@/components/dashboard/load-error-state'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -83,6 +84,7 @@ function formatCurrency(amount: number | string) {
 
 export function AdminListingsList() {
 	const [data, setData] = useState<ListingsResponse | null>(null)
+	const [errorMessage, setErrorMessage] = useState<string | null>(null)
 	const [isLoading, setIsLoading] = useState(true)
 	const [search, setSearch] = useState('')
 	const [searchInput, setSearchInput] = useState('')
@@ -91,13 +93,24 @@ export function AdminListingsList() {
 
 	const fetchListings = useCallback(async () => {
 		setIsLoading(true)
+		setErrorMessage(null)
 		const params = new URLSearchParams({ page: String(page), limit: '20' })
 		if (search) params.set('search', search)
 		if (statusFilter !== 'all') params.set('status', statusFilter)
 
 		try {
 			const res = await fetch(`/api/admin/listings?${params}`)
-			if (res.ok) setData(await res.json())
+			if (!res.ok) {
+				const json = await res.json().catch(() => null)
+				throw new Error(json?.error || 'Listinglarni yuklashda xatolik')
+			}
+
+			setData(await res.json())
+		} catch (error) {
+			setData(null)
+			setErrorMessage(
+				error instanceof Error ? error.message : 'Kutilmagan xatolik yuz berdi',
+			)
 		} finally {
 			setIsLoading(false)
 		}
@@ -176,6 +189,12 @@ export function AdminListingsList() {
 						<Skeleton key={i} className='h-14 w-full' />
 					))}
 				</div>
+			) : errorMessage ? (
+				<LoadErrorState
+					title="Admin listinglarini yuklab bo'lmadi"
+					description={errorMessage}
+					onRetry={fetchListings}
+				/>
 			) : data && data.listings.length > 0 ? (
 				<div className='rounded-md border'>
 					<Table>

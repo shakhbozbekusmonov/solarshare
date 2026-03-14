@@ -118,7 +118,8 @@ export async function POST(request: Request) {
 
 	const totalPrice = requestedKwh * Number(listing.pricePerKwh)
 
-	// Create order and transaction in a single transaction
+	// Create order and transaction in a single transaction.
+	// Listing availability is decremented only after payment succeeds.
 	const order = await prisma.$transaction(async tx => {
 		const newOrder = await tx.order.create({
 			data: {
@@ -149,26 +150,6 @@ export async function POST(request: Request) {
 				status: 'PENDING',
 			},
 		})
-
-		// Decrease available kWh
-		await tx.listing.update({
-			where: { id: listingId },
-			data: {
-				availableKwh: { decrement: requestedKwh },
-			},
-		})
-
-		// If listing now has 0 available, mark as SOLD
-		const updated = await tx.listing.findUnique({
-			where: { id: listingId },
-			select: { availableKwh: true },
-		})
-		if (updated && Number(updated.availableKwh) <= 0) {
-			await tx.listing.update({
-				where: { id: listingId },
-				data: { status: 'SOLD' },
-			})
-		}
 
 		return newOrder
 	})

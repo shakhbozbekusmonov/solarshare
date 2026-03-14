@@ -1,5 +1,6 @@
 'use client'
 
+import { LoadErrorState } from '@/components/dashboard/load-error-state'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -84,6 +85,7 @@ function formatCurrency(amount: number | string, currency: string) {
 
 export function AdminTransactionsList() {
 	const [data, setData] = useState<TransactionsResponse | null>(null)
+	const [errorMessage, setErrorMessage] = useState<string | null>(null)
 	const [isLoading, setIsLoading] = useState(true)
 	const [statusFilter, setStatusFilter] = useState('all')
 	const [dateFrom, setDateFrom] = useState('')
@@ -92,6 +94,7 @@ export function AdminTransactionsList() {
 
 	const fetchTransactions = useCallback(async () => {
 		setIsLoading(true)
+		setErrorMessage(null)
 		const params = new URLSearchParams({ page: String(page), limit: '20' })
 		if (statusFilter !== 'all') params.set('status', statusFilter)
 		if (dateFrom) params.set('dateFrom', dateFrom)
@@ -99,7 +102,17 @@ export function AdminTransactionsList() {
 
 		try {
 			const res = await fetch(`/api/admin/transactions?${params}`)
-			if (res.ok) setData(await res.json())
+			if (!res.ok) {
+				const json = await res.json().catch(() => null)
+				throw new Error(json?.error || 'Tranzaksiyalarni yuklashda xatolik')
+			}
+
+			setData(await res.json())
+		} catch (error) {
+			setData(null)
+			setErrorMessage(
+				error instanceof Error ? error.message : 'Kutilmagan xatolik yuz berdi',
+			)
 		} finally {
 			setIsLoading(false)
 		}
@@ -215,6 +228,12 @@ export function AdminTransactionsList() {
 						<Skeleton key={i} className='h-14 w-full' />
 					))}
 				</div>
+			) : errorMessage ? (
+				<LoadErrorState
+					title="Tranzaksiyalarni yuklab bo'lmadi"
+					description={errorMessage}
+					onRetry={fetchTransactions}
+				/>
 			) : data && data.transactions.length > 0 ? (
 				<div className='rounded-md border'>
 					<Table>

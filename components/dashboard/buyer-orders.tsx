@@ -1,5 +1,6 @@
 'use client'
 
+import { LoadErrorState } from '@/components/dashboard/load-error-state'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -88,12 +89,14 @@ type TabFilter = 'all' | 'active' | 'completed' | 'cancelled'
 
 export function BuyerOrdersList() {
 	const [data, setData] = useState<OrdersResponse | null>(null)
+	const [errorMessage, setErrorMessage] = useState<string | null>(null)
 	const [isLoading, setIsLoading] = useState(true)
 	const [tab, setTab] = useState<TabFilter>('all')
 	const [page, setPage] = useState(1)
 
 	const fetchOrders = useCallback(async () => {
 		setIsLoading(true)
+		setErrorMessage(null)
 		const params = new URLSearchParams({
 			page: String(page),
 			limit: '20',
@@ -105,9 +108,17 @@ export function BuyerOrdersList() {
 
 		try {
 			const res = await fetch(`/api/orders?${params}`)
-			if (res.ok) {
-				setData(await res.json())
+			if (!res.ok) {
+				const json = await res.json().catch(() => null)
+				throw new Error(json?.error || 'Buyurtmalarni yuklashda xatolik')
 			}
+
+			setData(await res.json())
+		} catch (error) {
+			setData(null)
+			setErrorMessage(
+				error instanceof Error ? error.message : 'Kutilmagan xatolik yuz berdi',
+			)
 		} finally {
 			setIsLoading(false)
 		}
@@ -139,6 +150,12 @@ export function BuyerOrdersList() {
 						<Skeleton key={i} className='h-16 w-full' />
 					))}
 				</div>
+			) : errorMessage ? (
+				<LoadErrorState
+					title="Buyurtmalarni yuklab bo'lmadi"
+					description={errorMessage}
+					onRetry={fetchOrders}
+				/>
 			) : data && data.orders.length > 0 ? (
 				<>
 					{/* Desktop Table */}

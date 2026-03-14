@@ -1,6 +1,7 @@
 'use client'
 
 import { CheckoutDialog } from '@/components/dashboard/checkout-dialog'
+import { LoadErrorState } from '@/components/dashboard/load-error-state'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
@@ -92,6 +93,7 @@ function ListingCardSkeleton() {
 
 export function MarketplaceListings() {
 	const [data, setData] = useState<ListingsResponse | null>(null)
+	const [errorMessage, setErrorMessage] = useState<string | null>(null)
 	const [isLoading, setIsLoading] = useState(true)
 	const [search, setSearch] = useState('')
 	const [searchInput, setSearchInput] = useState('')
@@ -107,6 +109,7 @@ export function MarketplaceListings() {
 
 	const fetchListings = useCallback(async () => {
 		setIsLoading(true)
+		setErrorMessage(null)
 		const params = new URLSearchParams({
 			page: String(page),
 			limit: String(limit),
@@ -121,10 +124,18 @@ export function MarketplaceListings() {
 
 		try {
 			const res = await fetch(`/api/listings?${params}`)
-			if (res.ok) {
-				const json = await res.json()
-				setData(json)
+			if (!res.ok) {
+				const json = await res.json().catch(() => null)
+				throw new Error(json?.error || 'Listinglarni yuklashda xatolik')
 			}
+
+			const json = await res.json()
+			setData(json)
+		} catch (error) {
+			setData(null)
+			setErrorMessage(
+				error instanceof Error ? error.message : 'Kutilmagan xatolik yuz berdi',
+			)
 		} finally {
 			setIsLoading(false)
 		}
@@ -339,6 +350,12 @@ export function MarketplaceListings() {
 						<ListingCardSkeleton key={i} />
 					))}
 				</div>
+			) : errorMessage ? (
+				<LoadErrorState
+					title="Bozor listinglarini yuklab bo'lmadi"
+					description={errorMessage}
+					onRetry={fetchListings}
+				/>
 			) : data && data.listings.length > 0 ? (
 				<div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-3'>
 					{data.listings.map(listing => (

@@ -1,40 +1,6 @@
+import { completeOrder, verifyStripeSignature } from '@/lib/payments'
 import { prisma } from '@/lib/prisma'
-import { createHmac, timingSafeEqual } from 'crypto'
 import { NextResponse } from 'next/server'
-
-const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || ''
-
-function verifyStripeSignature(payload: string, sigHeader: string): boolean {
-	if (!STRIPE_WEBHOOK_SECRET) return false
-
-	const parts = sigHeader.split(',').reduce(
-		(acc, part) => {
-			const [key, val] = part.split('=')
-			if (key === 't') acc.timestamp = val
-			if (key === 'v1') acc.signatures.push(val)
-			return acc
-		},
-		{ timestamp: '', signatures: [] as string[] },
-	)
-
-	if (!parts.timestamp || parts.signatures.length === 0) return false
-
-	const signedPayload = `${parts.timestamp}.${payload}`
-	const expected = createHmac('sha256', STRIPE_WEBHOOK_SECRET)
-		.update(signedPayload)
-		.digest('hex')
-
-	return parts.signatures.some(sig => {
-		try {
-			return timingSafeEqual(
-				Buffer.from(expected, 'hex'),
-				Buffer.from(sig, 'hex'),
-			)
-		} catch {
-			return false
-		}
-	})
-}
 
 interface StripeEvent {
 	type: string
@@ -81,28 +47,28 @@ export async function POST(request: Request) {
 				return NextResponse.json({ received: true })
 			}
 
-			await prisma.$transaction([
-				prisma.transaction.create({
-					data: {
-						orderId,
-						amount: order.totalPrice,
-						currency: 'USD',
-						status: 'SUCCESS',
-						providerResponse: {
-							stripe_event: event.type,
-							payment_intent_id: event.data.object.id,
-						},
+			// Create transaction then use completeOrder to also decrement listing.availableKwh
+			const newTx = await prisma.transaction.create({
+				data: {
+					orderId,
+					amount: order.totalPrice,
+					currency: 'USD',
+					status: 'PENDING',
+					providerResponse: {
+						stripe_event: event.type,
+						payment_intent_id: event.data.object.id,
 					},
-				}),
-				prisma.order.update({
-					where: { id: orderId },
-					data: {
-						status: 'PAID',
-						paymentId: event.data.object.id,
-						paymentMethod: 'STRIPE',
-					},
-				}),
-			])
+				},
+			})
+			await prisma.order.update({
+				where: { id: orderId },
+				data: {
+					paymentId: event.data.object.id,
+					paymentMethod: 'STRIPE',
+				},
+			})
+			// Marks transaction SUCCESS, order PAID, decrements listing.availableKwh
+			await completeOrder(newTx.id)
 
 			return NextResponse.json({ received: true })
 		}

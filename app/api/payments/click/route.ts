@@ -1,35 +1,10 @@
+import {
+	type ClickParams,
+	completeOrder,
+	verifyClickSign,
+} from '@/lib/payments'
 import { prisma } from '@/lib/prisma'
-import { createHash } from 'crypto'
 import { NextResponse } from 'next/server'
-
-const CLICK_SECRET_KEY = process.env.CLICK_SECRET_KEY || ''
-
-function verifyClickSign(params: ClickParams): boolean {
-	const signString = [
-		params.click_trans_id,
-		params.service_id,
-		CLICK_SECRET_KEY,
-		params.merchant_trans_id,
-		params.amount,
-		params.action,
-		params.sign_time,
-	].join('')
-	const hash = createHash('md5').update(signString).digest('hex')
-	return hash === params.sign_string
-}
-
-interface ClickParams {
-	click_trans_id: string
-	service_id: string
-	merchant_trans_id: string
-	merchant_prepare_id?: string
-	amount: string
-	action: string
-	sign_time: string
-	sign_string: string
-	error: string
-	error_note: string
-}
 
 export async function POST(request: Request) {
 	const body = (await request.json()) as ClickParams
@@ -153,16 +128,8 @@ export async function POST(request: Request) {
 			})
 		}
 
-		await prisma.$transaction([
-			prisma.transaction.update({
-				where: { id: tx.id },
-				data: { status: 'SUCCESS' },
-			}),
-			prisma.order.update({
-				where: { id: tx.orderId },
-				data: { status: 'PAID' },
-			}),
-		])
+		// Marks transaction SUCCESS, order PAID, decrements listing.availableKwh
+		await completeOrder(tx.id)
 
 		return NextResponse.json({
 			click_trans_id: body.click_trans_id,
